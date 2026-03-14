@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables and secrets
+.env
+.env.local
+*.key
+credentials.json
+
+# Database files
+*.db
+*.db-journal
+
+# spaCy models (large, should be installed via pip)
+en_core_web_sm/
+en_core_web_md/
+en_core_web_lg/
