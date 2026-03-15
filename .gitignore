@@ -36,3 +36,6 @@ credentials.json
 en_core_web_sm/
 en_core_web_md/
 en_core_web_lg/
+
+# Trishul data
+data/

@@ -59,17 +59,23 @@ Is this content sensitive at all?
 - [Tier 3: Open Use](docs/tier-3-open-use.md) — Using AI services directly with no precautions
 - [Tier 2: Anonymous Use](docs/tier-2-anonymous-use.md) — Identity delinking via OpenRouter + PII redaction
 - [Tier 1: Full Isolation](docs/tier-1-full-isolation.md) — AWS Bedrock, Azure AI, or local models
+- [CLI Agent](docs/cli-agent.md) — Multi-step coding agent with privacy-aware routing
 - [Threat Model](docs/threat-model.md) — What each tier protects against
 - [FAQ](docs/faq.md) — Common questions answered
 
-## Code
-
-The `src/pii_redactor/` module provides a working PII redaction engine for Tier 2:
+## Quick Start
 
 ```bash
-pip install spacy
+pip install -r requirements.txt
 python -m spacy download en_core_web_sm
+
+# Set your API key
+export OPENROUTER_API_KEY="your-key-here"
 ```
+
+### PII Redaction Engine
+
+The `src/pii_redactor/` module provides a working PII redaction engine for Tier 2:
 
 ```python
 from src.pii_redactor import PIIRedactor, RedactionMapping
@@ -84,7 +90,36 @@ redacted = redactor.redact("Contact John at john@acme.com", mapping)
 # "Contact [PERSON_1] at [EMAIL_1]"
 ```
 
-See [`examples/`](examples/) for runnable scripts covering each tier.
+### CLI Agent
+
+The `src/cli/` module provides a multi-step coding agent that routes LLM calls through privacy tiers while keeping all file I/O and command execution local:
+
+```bash
+# Execute a coding task at Tier 2 (anonymous via OpenRouter)
+python -m src.cli.main task "Add rate limiting to the API endpoints"
+
+# Interactive chat mode
+python -m src.cli.main chat --tier 2
+
+# Use Tier 1 for sensitive work (Bedrock or local Ollama)
+python -m src.cli.main task --tier 1 "Analyze this financial CSV"
+```
+
+See [docs/cli-agent.md](docs/cli-agent.md) for full CLI documentation.
+
+### Backend API
+
+The `src/backend/` module provides a FastAPI server shared by both the Web UI and CLI:
+
+```bash
+# Development
+uvicorn src.backend.app:app --reload --port 8000
+
+# Production
+docker compose up -d
+```
+
+See [`examples/`](examples/) for additional runnable scripts covering each tier.
 
 ## Contributing
 

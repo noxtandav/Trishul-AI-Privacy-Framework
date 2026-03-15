@@ -32,6 +32,12 @@ The recommended approach is a single self-hosted chat application — your **Tri
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
+## Unified System: Web + CLI
+
+The Trishul system includes both a Web UI and a CLI agent, sharing a single FastAPI backend and encrypted database. The Web UI handles conversational chat, while the CLI handles multi-step coding tasks with filesystem access and command execution.
+
+See [cli-agent.md](cli-agent.md) for full details on the CLI, backend API, and cross-interface workflows.
+
 ## Tier Selection UX
 
 When starting a new conversation, the user selects the privacy tier. The tier can be displayed as a simple indicator in the chat header:

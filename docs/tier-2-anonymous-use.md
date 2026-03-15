@@ -120,6 +120,12 @@ Your local chat history is sensitive — it contains the unredacted versions of 
 
 See [`examples/database_setup.py`](../examples/database_setup.py) for the full setup.
 
+## CLI Agent for Multi-Step Tasks
+
+For coding and complex multi-step workflows, the Trishul CLI agent operates at Tier 2 by default. It keeps all file I/O and command execution local while routing LLM reasoning through OpenRouter anonymously.
+
+See [cli-agent.md](cli-agent.md) for full documentation, including the agent loop, context builder, and unified Web + CLI architecture.
+
 ## Limitations of Tier 2
 
 - **Content is still seen during inference.** The model provider processes your tokens. They just can't link them to you.
