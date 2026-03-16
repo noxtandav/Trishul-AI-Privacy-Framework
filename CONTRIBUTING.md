@@ -4,44 +4,26 @@ Contributions to Trishul are welcome! This is a living framework and benefits fr
 
 ## Areas We Need Help With
 
-- **PII patterns** — Additional regex patterns for different countries and jurisdictions (e.g., Canadian SIN, UK National Insurance numbers, EU VAT IDs)
-- **Alternative routing providers** — Documentation or examples for providers other than OpenRouter
-- **Benchmarks** — Comparing local model quality vs. frontier models for specific tasks (financial analysis, legal review, etc.)
-- **UI/UX designs** — Mockups or implementations for the tier selection interface
-- **Docker compose** — Configurations for the full self-hosted Tier 2 stack
-- **Mobile implementations** — iOS or Android chat clients with tier support
+- **Tool recommendations** — Reviews and comparisons of AI tools for each tier
+- **PII redaction tool comparisons** — Benchmarks of Presidio, spaCy, Stanza, and cloud services for different use cases
+- **Setup guides** — Step-by-step guides for configuring Bedrock, Azure, or OpenRouter with specific tools
+- **Translations** — Translating the framework into other languages
+- **Real-world case studies** — How people use tiered privacy in practice
+- **Country-specific guidance** — Privacy regulations and PII types by jurisdiction (GDPR, CCPA, India's DPDP Act, etc.)
 
 ## How to Contribute
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b add-canadian-pii-patterns`)
+2. Create a feature branch (`git checkout -b add-bedrock-setup-guide`)
 3. Make your changes
 4. Submit a pull request with a clear description of what you added
 
-## Adding PII Patterns
-
-To add patterns for a new country or data type, edit `src/pii_redactor/patterns.py`:
-
-```python
-# Add your pattern to the PII_PATTERNS dict
-"new_pattern_name": re.compile(
-    r'your-regex-here'
-),
-```
-
-Include test cases that show what the pattern matches and what it doesn't.
-
-## Code Style
-
-- Python code should be readable and well-commented
-- Follow existing patterns in the codebase
-- Keep examples self-contained and runnable
-
-## Documentation
+## Documentation Style
 
 - Keep docs concise and practical
+- Recommend existing tools rather than building custom solutions
 - Include real-world examples where possible
-- If you're documenting a new provider or tool, include setup instructions
+- If documenting a tool, include setup instructions and link to official docs
 
 ## Questions?
 

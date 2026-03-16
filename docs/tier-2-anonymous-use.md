@@ -1,12 +1,14 @@
-# Tier 2: Anonymous Use (Identity Delinking)
+# Tier 2: Anonymous Use (Identity Delinking) — Detailed Guide
 
 **Privacy Level:** Medium — content is seen by model providers during inference, but not linked to your identity
 **Best For:** Business strategy, competitive research, personal reflections, travel planning, sensitive brainstorming
-**Setup Effort:** Moderate (a weekend project)
+**Setup Effort:** Minimal — sign up for OpenRouter and use existing tools
+
+---
 
 ## The Core Idea
 
-You build your own chat interface that routes requests through an intermediary (like OpenRouter) to model providers. The model provider sees the content of each request but has no idea who sent it. There's no account, no email, no persistent session on their end. Each API call is a stateless, anonymous request.
+Instead of building a custom chat interface, use existing AI tools that support OpenRouter as a backend. OpenRouter acts as a privacy buffer — your account is with OpenRouter (one entity to trust), and they proxy requests to dozens of model providers without passing your identity downstream.
 
 ## Why This Works
 
@@ -22,113 +24,103 @@ When an anonymous API call arrives from OpenRouter:
 - No link to any previous or future request
 - After inference, the connection is gone
 
-**OpenRouter acts as a privacy buffer.** Your account is with OpenRouter (one entity to trust), and they proxy requests to dozens of model providers without passing your identity downstream.
-
-## What You Need to Build
-
-1. **A chat frontend** — web app or terminal UI
-2. **A backend server** — manages chat history, routes requests
-3. **A local database** — stores your conversation history (encrypted)
-4. **A PII redaction layer** — strips identifying information before API calls
-5. **An OpenRouter account** — for model routing
-
-## Architecture
-
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                    YOUR INFRASTRUCTURE                        │
-│                                                              │
-│  ┌────────────┐    ┌────────────────┐    ┌───────────────┐  │
-│  │  Chat UI   │───▶│  Backend API   │───▶│ PII Redaction │  │
-│  │ (Frontend) │    │  (FastAPI /    │    │   Middleware   │  │
-│  └────────────┘    │   Express)     │    └───────┬───────┘  │
-│                    └───────┬────────┘            │           │
-│                            │                     │           │
-│                    ┌───────▼────────┐            │           │
-│                    │  Encrypted DB  │            │           │
-│                    │  (SQLite +     │            │           │
-│                    │   SQLCipher)   │            │           │
-│                    └────────────────┘            │           │
-└──────────────────────────────────────────────────┼───────────┘
-                                                   │
-                                          ┌────────▼────────┐
-                                          │   OpenRouter    │
-                                          │   (Routing)     │
-                                          └────────┬────────┘
-                                                   │
-                              ┌─────────────┬──────┴──────┬─────────────┐
-                              ▼             ▼             ▼             ▼
-                          Anthropic      Google       DeepSeek      Mistral
-                          (Claude)      (Gemini)
-
-                     ─── These providers see anonymous, stateless requests ───
+You ──→ OpenRouter ──→ Anthropic / Google / DeepSeek / Mistral
+         (knows you)    (sees anonymous, stateless request)
 ```
 
-## Chat History Management
+## Recommended Tools for Chat
 
-Your backend maintains full conversation history locally. When resuming a conversation, you load the history from your database and include the relevant context in the API call. The model provider never stores it — they just see a single request with some context, process it, and return a response.
+| Tool | What It Is | OpenRouter Support |
+|------|-----------|-------------------|
+| [OpenRouter Chat](https://openrouter.ai/chat) | OpenRouter's built-in chat UI | Native |
+| [TypingMind](https://www.typingmind.com) | Polished chat UI, bring your own API key | Yes — set OpenRouter as provider |
+| [LibreChat](https://github.com/danny-avila/LibreChat) | Self-hosted ChatGPT clone | Yes — OpenAI-compatible endpoint |
+| [Big-AGI](https://github.com/enricoros/big-agi) | Open-source AI chat with multi-model support | Yes — OpenAI-compatible |
+| [Open WebUI](https://github.com/open-webui/open-webui) | Self-hosted UI for local and remote models | Yes — OpenAI-compatible endpoint |
+| [Jan](https://jan.ai) | Desktop app, local-first with remote model support | Yes — OpenAI-compatible |
 
-See [`examples/tier2_chat_flow.py`](../examples/tier2_chat_flow.py) for a working example.
+## Recommended Tools for Coding
 
-## PII Redaction: The Critical Layer
+For multi-step coding tasks where you want identity delinking:
 
-Before any message leaves your infrastructure, a redaction layer strips out identifying information — names, emails, phone numbers, company names, addresses — and replaces them with generic placeholders. When the response comes back, you can optionally rehydrate the placeholders.
+| Tool | What It Is | OpenRouter Support |
+|------|-----------|-------------------|
+| [Aider](https://aider.chat) | Terminal-based AI coding assistant | Yes — set as OpenAI-compatible base URL |
+| [OpenCode](https://github.com/opencode-ai/opencode) | Open-source coding agent | Yes — OpenAI-compatible |
+| [Cline](https://github.com/cline/cline) | Autonomous coding agent for VS Code | Yes — configure OpenRouter as provider |
+| [Continue](https://continue.dev) | Open-source AI code assistant for IDEs | Yes — OpenAI-compatible |
 
-The PII redaction engine is implemented in [`src/pii_redactor/`](../src/pii_redactor/). It uses a layered approach:
+### Example: Aider with OpenRouter
 
-1. **Custom dictionary** — catch context-specific terms you define (your company name, project names)
-2. **Regex patterns** — catch structured PII (emails, phones, IPs, credit cards, Aadhaar, PAN)
-3. **Named Entity Recognition (NER)** — catch unstructured PII (names, organizations, locations)
+```bash
+pip install aider-chat
 
-### What Gets Redacted
+export OPENROUTER_API_KEY="your-key-here"
+aider --model openrouter/anthropic/claude-sonnet-4-20250514
+```
 
-| Category | Examples | Detection Method |
-|----------|----------|-----------------|
-| **Email addresses** | user@domain.com | Regex |
-| **Phone numbers** | +91-98765-43210, (555) 123-4567 | Regex |
-| **Indian PAN** | ABCDE1234F | Regex |
-| **Indian Aadhaar** | 1234 5678 9012 | Regex |
-| **US SSN** | 123-45-6789 | Regex |
-| **Credit card numbers** | 4111-1111-1111-1111 | Regex |
-| **IP addresses** | 192.168.1.1 | Regex |
-| **URLs** | https://mycompany.com/internal | Regex |
-| **Person names** | "Rahul Sharma", "John" | NER (spaCy) |
-| **Organizations** | "Google", "Reserve Bank of India" | NER (spaCy) |
-| **Locations** | "Mumbai", "Silicon Valley" | NER (spaCy) |
-| **Custom terms** | Your company name, project codenames | Dictionary |
+## PII Redaction: Adding an Extra Layer
 
-### What Redaction Does NOT Catch
+For Tier 2 conversations involving business-specific terms (company names, project codenames, client names), consider running PII redaction before sending content. You don't need to build a custom redactor — several tools exist:
 
-PII redaction is a best-effort defense. It will miss:
+### Recommended PII Redaction Tools
 
-- **Contextual identifiers**: "I'm the only AI startup founder in my small town who previously worked at [specific company]" — this is identifying even without explicit PII.
-- **Behavioral fingerprints**: Unique writing style, timezone patterns, topic combinations.
-- **Indirect references**: "My building on 5th and Main" — not flagged as PII but could identify you.
-- **Domain-specific identifiers**: Employee IDs, internal ticket numbers, proprietary terminology.
+| Tool | What It Does | Best For |
+|------|-------------|----------|
+| [Microsoft Presidio](https://github.com/microsoft/presidio) | Open-source PII detection and anonymization SDK | Programmatic redaction in Python pipelines |
+| [PasteGuard](https://chromewebstore.google.com/detail/pasteguard) | Browser extension that redacts PII before pasting | Quick manual redaction when copying into chat UIs |
+| [Stanza (Stanford NLP)](https://stanfordnlp.github.io/stanza/) | NLP toolkit with NER for 60+ languages | Multilingual PII detection |
+| [spaCy](https://spacy.io) | Industrial NLP with NER models | Building automated redaction into workflows |
+| [Amazon Comprehend](https://aws.amazon.com/comprehend/) | Managed NLP service with PII detection | AWS-native workflows |
+| [Google Cloud DLP](https://cloud.google.com/sensitive-data-protection) | Cloud-based sensitive data detection | GCP-native workflows |
 
-Mitigation: For Tier 2, accept that content-level privacy is not the goal — identity delinking is. If the content itself is sensitive enough that you wouldn't want *anyone* to see it, use Tier 1.
+### Example: Microsoft Presidio
+
+```python
+# pip install presidio-analyzer presidio-anonymizer
+# python -m spacy download en_core_web_lg
+
+from presidio_analyzer import AnalyzerEngine
+from presidio_anonymizer import AnonymizerEngine
+
+analyzer = AnalyzerEngine()
+anonymizer = AnonymizerEngine()
+
+text = "My name is Rahul Sharma and my email is rahul@sombyte.in"
+
+results = analyzer.analyze(text=text, language="en")
+anonymized = anonymizer.anonymize(text=text, analyzer_results=results)
+print(anonymized.text)
+# "My name is <PERSON> and my email is <EMAIL_ADDRESS>"
+```
+
+### Manual Approach (No Tools)
+
+For quick, one-off redaction:
+
+1. Before pasting into any AI chat, scan for: names, emails, phone numbers, company names, addresses, account numbers
+2. Replace them with generic placeholders: "My company" instead of "Acme Corp", "the CEO" instead of "John Smith"
+3. After getting the response, mentally map the placeholders back
+
+This covers the 80% case for casual Tier 2 use.
+
+### What PII Redaction Does NOT Catch
+
+- **Contextual identifiers**: "I'm the only AI startup founder in my small town who previously worked at [specific company]"
+- **Behavioral fingerprints**: Unique writing style, timezone patterns, topic combinations
+- **Indirect references**: "My building on 5th and Main"
+- **Domain-specific identifiers**: Employee IDs, internal ticket numbers, proprietary terminology
+
+If the content itself is sensitive enough that you wouldn't want *anyone* to see it, use Tier 1.
 
 ## Provider Selection
 
-Not all providers on OpenRouter have the same data policies. When routing through OpenRouter, prefer providers that explicitly commit to not logging API inputs or using them for training.
-
-See [`examples/tier2_chat_flow.py`](../examples/tier2_chat_flow.py) for an example of filtering privacy-respecting models.
-
-## Database Encryption
-
-Your local chat history is sensitive — it contains the unredacted versions of all your conversations. Encrypt it at rest using SQLCipher.
-
-See [`examples/database_setup.py`](../examples/database_setup.py) for the full setup.
-
-## CLI Agent for Multi-Step Tasks
-
-For coding and complex multi-step workflows, the Trishul CLI agent operates at Tier 2 by default. It keeps all file I/O and command execution local while routing LLM reasoning through OpenRouter anonymously.
-
-See [cli-agent.md](cli-agent.md) for full documentation, including the agent loop, context builder, and unified Web + CLI architecture.
+Not all providers on OpenRouter have the same data policies. When routing through OpenRouter, prefer providers that explicitly commit to not logging API inputs or using them for training. OpenRouter's model listing includes data policy information — check before selecting a model.
 
 ## Limitations of Tier 2
 
 - **Content is still seen during inference.** The model provider processes your tokens. They just can't link them to you.
-- **OpenRouter knows your identity.** You're trusting one intermediary instead of many providers. Review their data retention policy.
-- **PII redaction is imperfect.** Regex-based approaches miss context-specific identifiers. NER models are better but not foolproof.
-- **Conversation context can leak identity.** If you discuss highly specific scenarios ("I'm building an ATS for Indian SMBs using FastAPI"), the content itself may be identifying even without explicit PII. Be mindful of what you include.
+- **OpenRouter knows your identity.** You're trusting one intermediary instead of many providers. Review their [privacy policy](https://openrouter.ai/privacy).
+- **PII redaction is imperfect.** No tool catches everything. Be mindful of context.
+- **Conversation context can leak identity.** If you discuss highly specific scenarios ("I'm building an ATS for Indian SMBs using FastAPI"), the content itself may be identifying even without explicit PII.
